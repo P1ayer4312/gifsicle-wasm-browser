@@ -11,7 +11,7 @@ async function build() {
     let workerStr = workerJs()
     workerStr = JSON.stringify(workerStr)
     indexJs = indexJs.replace(`workerLocalUrl: ''`, `workerLocalUrl: ${workerStr}`)
-    let result = UglifyJS.minify(indexJs);
+    let result = UglifyJS.minify(indexJs, {compress: false, keep_fargs: true, keep_fnames: true, mangle: false});
     indexJs = result.code
     progresLog(`minify code 🔧 `)
 
@@ -58,7 +58,7 @@ async function build() {
 `
     indexJs = aut + indexJs
 
-    fs.writeFileSync('../dist/gifsicle.min.js', indexJs)
+    fs.writeFileSync('../dist/gifsicle.min.ts', indexJs)
     fs.writeFileSync('../docs/js/gifsicle.min.js', indexJs)
     ////////////////
     progresLog('done ✅')
@@ -80,12 +80,10 @@ function workerJs() {
     let wasmJs = fs.readFileSync('./gifsicle.js').toString()
     let wJs = fs.readFileSync('./worker.js').toString()
     wJs = wJs.replace('importScripts("gifsicle.js");', wasmJs)
-    let result = UglifyJS.minify(wJs);
+    let result = UglifyJS.minify(wJs, {compress: false, keep_fargs: true, keep_fnames: true, mangle: false});
     let out = result.code.replace('gifsicle.wasm', wasmBase64())
     progresLog('workerJs 🔧')
     return out
-    // base64 = 'data:application/wasm;base64,' + base64
-    // console.log(base64.slice(0, 100));
 }
 
 function updateVersionNum(num = '0.3.3') {

@@ -1,3 +1,5 @@
+Random patches to make it work with another project
+
 <p align="left">
    En | <a href="./README_CN.md">简体中文</a>
 </p>

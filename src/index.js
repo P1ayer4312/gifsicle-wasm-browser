@@ -1,4 +1,4 @@
-let gifsicle = {
+const gifsicle = {
 	tool: {
 		workerLocalUrl: '',
 		workerBlobUrl: '',
@@ -31,15 +31,7 @@ let gifsicle = {
 					.replace(/\[object\s(.+)\]/, "$1")
 					.toLowerCase();
 		},
-		async textToUrl(text) {
-			// let isBuild = false;
-			// let workerUrl = "";
-			// if (isBuild) {
-			// 	workerUrl = URL.createObjectURL(new Blob([this.worker()]));
-			// } else {
-			// 	workerUrl = this.worker();
-			// }
-			// console.log(workerUrl);
+		async textToUrl() {
 			return this.worker();
 		},
 		loadCommand(command) {
@@ -67,7 +59,8 @@ let gifsicle = {
 								throw "<" + file + ">" + " Url error!!!" + this.errorLink();
 							return d.arrayBuffer();
 						})
-						.then((d) => res(d));
+						.then((d) => res(d))
+						.catch(rej);
 				}
 				// blob
 				else if (["blob", "file"].includes(type)) {
@@ -93,12 +86,12 @@ let gifsicle = {
 			return new Promise(async (res, rej) => {
 				let type = this.testType(input);
 				if (type !== "array") {
-					throw (
+					rej(
 						"<input> types:" + type + ", only supports Array" + this.errorLink()
 					);
 				}
 				if (input.length === 0) {
-					throw "<input> the content can not be blank" + this.errorLink();
+					rej("<input> the content can not be blank" + this.errorLink());
 				}
 				let loadTask = input.map((m) => this.loadOne(m.file));
 				Promise.all(loadTask)
@@ -109,7 +102,7 @@ let gifsicle = {
 						});
 						res(bufArr);
 					})
-					.catch(function (reason) { });
+					.catch(rej);
 			});
 		},
 		loadFolder(arr) {
@@ -119,7 +112,7 @@ let gifsicle = {
 				if (["array"].includes(type)) {
 					res(arr);
 				} else {
-					throw (
+					rej(
 						"<folder> types:" +
 						type +
 						", only supports Array" +
@@ -129,29 +122,31 @@ let gifsicle = {
 			});
 		},
 	},
-	run(obj = {}) {
+	run(obj) {  
+		if (typeof obj !== 'object' || Array.isArray(obj)) {
+			throw new Error('idk')
+		}
+
 		return new Promise(async (res, rej) => {
 			let {
 				input = [],
 				command = "",
 				folder = [],
 				isStrict = false,
-				timeout = 100,
-				start = _ => { }
+				showLogs = false,
 			} = obj
 			let workerUrl = await this.tool.textToUrl();
 			let myWorker = new Worker(workerUrl);
 
 			let newCommand = this.tool.loadCommand(command);
 			let newFiles = await this.tool.loadFile(input);
-			start(newFiles)
 			let newFolder = await this.tool.loadFolder(folder);
 
-			
-
-			console.log(newCommand);
-			console.log(newFiles);
-			console.log(workerUrl);
+			if (showLogs) {
+				console.log(newCommand);
+				console.log(newFiles);
+				console.log(workerUrl);
+			}
 			myWorker.postMessage({
 				data: newFiles,
 				command: newCommand,
@@ -160,14 +155,14 @@ let gifsicle = {
 			});
 			// 量化转换
 			myWorker.onmessage = async function (e) {
-				if (!e.data || typeof e.data === 'string') {
+				if (!e.data.files || typeof e.data.files === 'string') {
 					myWorker.terminate();
-					rej(e.data);
+					rej(e.data.files);
 					return;
 				}
-				let outArr = [];
-				for (let index = 0; index < e.data.length; index++) {
-					const element = e.data[index];
+				const outArr = new Array(e.data.files.length);
+				for (let index = 0; index < e.data.files.length; index++) {
+					const element = e.data.files[index];
 					if (element.name.includes(".txt")) {
 						let blob = new File([element.file], element.name, {
 							type: "text/plain",
@@ -183,7 +178,10 @@ let gifsicle = {
 					}
 				}
 				myWorker.terminate();
-				res(outArr);
+				res({         // --- Changed
+          gifs: outArr,
+          outputLogs: e.data.outputLogs
+        });
 			};
 			// 转换错误
 			myWorker.onerror = function (e) {
@@ -191,7 +189,6 @@ let gifsicle = {
 				myWorker.terminate();
 				res(null);
 			};
-			// console.log(obj);
 		});
 	},
 };

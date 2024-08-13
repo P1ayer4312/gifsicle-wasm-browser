@@ -1,6 +1,6 @@
 {
   "name": "gifsicle-wasm-browser",
-  "version": "1.5.17",
+  "version": "1.5.35",
   "description": "Run Gifsicle in browser，Compress, rotate, crop and other operations on Gif images",
   "homepage": "https://github.com/renzhezhilu/gifsicle-wasm-browser",
   "author": {
@@ -21,7 +21,8 @@
   ],
   "main": "./dist/gifsicle.min.js",
   "scripts": {
-    "start": "node ./gifsicle.min.js"
+    "start": "node ./gifsicle.min.js",
+    "lint": "eslint ./src --report-unused-disable-directives --max-warnings 0"
   },
   "repository": {
     "type": "git",
@@ -37,8 +38,10 @@
     "README.md",
     "LICENSE"
   ],
-  "dependencies": {},
   "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "eslint": "^9.9.0",
+    "globals": "^15.9.0",
     "uglify-js": "^3.16.1"
   }
 }
